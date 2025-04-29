@@ -70,6 +70,14 @@ namespace Laba_12
                 dataGridView1.Rows[0].Cells[comparisonsCell].Value = sortTwoPhaseMerge.Comparisons;
                 dataGridView1.Rows[0].Cells[sortedCell].Value = sortTwoPhaseMerge.Sorted;
             }
+            if(arraySortChecked[1])
+            {
+                InfoSort sortOnePhaseMerge = SinglePhaseMergeSort(array);
+                dataGridView1.Rows[1].Cells[timeCell].Value = sortOnePhaseMerge.Time;
+                dataGridView1.Rows[1].Cells[assigmentCell].Value = sortOnePhaseMerge.Assigments;
+                dataGridView1.Rows[1].Cells[comparisonsCell].Value = sortOnePhaseMerge.Comparisons;
+                dataGridView1.Rows[1].Cells[sortedCell].Value = sortOnePhaseMerge.Sorted;
+            }
         }
         #region 
         //public InfoSort BubbleSort(int[] array)
@@ -526,7 +534,7 @@ namespace Laba_12
         #endregion
         private static int assignments = 0;
         private static int comparisons = 0;
-        public static InfoSort TwoPhaseMergeSort(int[] _arr)
+        public InfoSort TwoPhaseMergeSort(int[] _arr)
         {
             assignments = 0;
             comparisons = 0;
@@ -605,7 +613,7 @@ namespace Laba_12
         /// <param name="runLength">Текущая длина серии</param>
         /// <param name="AssignmentCount">Счетчик операций присваивания</param>
         /// <returns>Кортеж с реальными длинами данных в dest1 и dest2</returns>
-        private static (int length1, int length2) SplitArray(
+        private (int length1, int length2) SplitArray(
             int[] source,
             int[] dest1,
             int[] dest2,
@@ -665,7 +673,7 @@ namespace Laba_12
         /// <param name="ComparisonCount">Счетчик сравнений</param>
         /// <param name="AssignmentCount">Счетчик присваиваний</param>
         /// <returns>True, если сортировка завершена</returns>
-        private static bool MergeArrays(
+        private bool MergeArrays(
             int[] dest,
             int[] source1,
             int[] source2,
@@ -733,6 +741,116 @@ namespace Laba_12
             // Если размер серии превысил длину массива - сортировка завершена
             return runLength >= dest.Length;
         }
+
+        private static int singleAssignments = 0;
+        private static int singleComparisons = 0;
+
+        private (int, int, int) doSimple1fSort(ref int[] aFile)
+        {
+            int comparsions = 0, permutations = 0;
+
+            int[] bFile = new int[aFile.Length];
+            int[] cFile = new int[aFile.Length];
+            int[] dFile = new int[aFile.Length];
+            int[] eFile = new int[aFile.Length];
+
+            int bPointer = 0;
+            int cPointer = 0;
+            int dPointer = 0;
+            int ePointer = 0;
+
+            bool isFirst = true;
+            int sequenceLength = 1;
+
+            int start = Environment.TickCount;
+
+            (bPointer, cPointer) = SplitArray(aFile, ref bFile, ref cFile, sequenceLength);
+
+            for (int i = 1; i <= aFile.Length; i *= 2)
+            {
+                if (isFirst)
+                    (dPointer, ePointer) = TransferItems(i, ref bFile, ref bPointer, ref cFile, ref cPointer, ref dFile, ref dPointer, ref eFile, ref ePointer, ref comparsions, ref permutations);
+                else
+                    (bPointer, cPointer) = TransferItems(i, ref dFile, ref dPointer, ref eFile, ref ePointer, ref bFile, ref bPointer, ref cFile, ref cPointer, ref comparsions, ref permutations);
+                isFirst = !isFirst;
+            }
+            if (isFirst)
+                MergeArrays(bFile, bPointer, cFile, cPointer, ref aFile, sequenceLength);
+            else
+                MergeArrays(dFile, dPointer, eFile, ePointer, ref aFile, sequenceLength);
+
+            int elapsedTime = Environment.TickCount - start;
+
+            return (comparsions, permutations, elapsedTime);
+        }
+
+        private (int, int) TransferItems(int sequenceLength,
+            ref int[] source1, ref int source1Pointer,
+            ref int[] source2, ref int source2Pointer,
+            ref int[] dest1, ref int dest1Pointer,
+            ref int[] dest2, ref int dest2Pointer,
+            ref int comparsions, ref int permutations)
+        {
+
+            bool file = true;
+            int index1 = 0;
+            int index2 = 0;
+
+            int count1 = 0;
+            int count2 = 0;
+
+            while (index1 < source1Pointer || index2 < source2Pointer)
+            {
+                comparsions++;
+
+                long curFirst = sequenceLength;
+                long curSecond = sequenceLength;
+
+                while (curFirst != 0 && curSecond != 0 && index1 < source1Pointer && index2 < source2Pointer)
+                {
+                    comparsions++;
+                    permutations++;
+                    if (source1[index1] <= source2[index2])
+                    {
+                        if (file)
+                            dest1[count1++] = source1[index1++];
+                        else
+                            dest2[count2++] = source1[index1++];
+                        curFirst--;
+                    }
+                    else
+                    {
+                        if (file) dest1[count1++] = source2[index2++];
+                        else dest2[count2++] = source2[index2++];
+                        curSecond--;
+                    }
+                }
+
+                while (curFirst != 0 && index1 < source1Pointer)
+                {
+                    permutations++;
+                    if (file)
+                        dest1[count1++] = source1[index1++];
+                    else
+                        dest2[count2++] = source1[index1++];
+                    curFirst--;
+                }
+
+                while (curSecond != 0 && index2 < source2Pointer)
+                {
+                    permutations++;
+                    if (file)
+                        dest1[count1++] = source2[index2++];
+                    else
+                        dest2[count2++] = source2[index2++];
+                    curSecond--;
+                }
+                file = !file;
+            }
+
+            return (count1, count2);
+        }
+
         public bool IsArraySorted(int[] arr)
         {
             for (int i = 0; i < arr.Length - 1; i++)
