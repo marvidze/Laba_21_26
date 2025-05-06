@@ -15,7 +15,7 @@ namespace Laba_12
     public partial class Form1 : Form
     {
         String[] arraySortNames = new String[] { "Простое 2ф", "Простое 1ф", "Естественное 2ф", "Естественное 1ф", "Поглощение" };
-        bool[] arraySortChecked = new bool[] { true, false, false, false, false };
+        bool[] arraySortChecked = new bool[] { true, true, false, false, false };
         const int ROWS_COUNT = 5;
         int arraySize;
         int[] array;
@@ -70,7 +70,7 @@ namespace Laba_12
                 dataGridView1.Rows[0].Cells[comparisonsCell].Value = sortTwoPhaseMerge.Comparisons;
                 dataGridView1.Rows[0].Cells[sortedCell].Value = sortTwoPhaseMerge.Sorted;
             }
-            if(arraySortChecked[1])
+            if (arraySortChecked[1])
             {
                 InfoSort sortOnePhaseMerge = SinglePhaseMergeSort(array);
                 dataGridView1.Rows[1].Cells[timeCell].Value = sortOnePhaseMerge.Time;
@@ -532,12 +532,11 @@ namespace Laba_12
         //}
 
         #endregion
-        private static int assignments = 0;
-        private static int comparisons = 0;
+
         public InfoSort TwoPhaseMergeSort(int[] _arr)
         {
-            assignments = 0;
-            comparisons = 0;
+            int assignments = 0;
+            int comparisons = 0;
             int[] arr = new int[_arr.Length];
             Array.Copy(_arr, arr, _arr.Length);
 
@@ -558,16 +557,12 @@ namespace Laba_12
 
             }
 
-            // Инициализация двух рабочих массивов для фаз разделения
-            // Размер равен исходному массиву для обработки худшего случая
             int[] B = new int[arr.Length];
             int[] C = new int[arr.Length];
 
-            int runLength = 1;    // Текущая длина серии (начинаем с 1 элемента)
-            bool sorted = false;  // Флаг завершения сортировки
+            int runLength = 1;
+            bool sorted = false;
 
-            // Главный цикл алгоритма (повтор до полной сортировки)
-            // Каждая итерация - один полный проход (разделение + слияние)
             while (!sorted)
             {
                 // ФАЗА 1: РАЗДЕЛЕНИЕ 
@@ -575,23 +570,24 @@ namespace Laba_12
                 // - tempArray1 получает 1-ю, 3-ю, 5-ю... серии 
                 // - tempArray2 получает 2-ю, 4-ю, 6-ю... серии
                 // Серия - подмассив длиной runLength
-                var (length1, length2) = SplitArray(arr, B, C, runLength);
+                var (length1, length2) = SplitArray(arr, B, C, runLength, ref comparisons, ref assignments);
 
                 // ФАЗА 2: СЛИЯНИЕ 
                 // Объединяем серии из двух массивов обратно в исходный:
                 // - Пары серий сливаются в упорядоченные последовательности
                 // - Длина результирующих серий удваивается (runLength * 2)
                 sorted = MergeArrays(
-                    dest:arr,            // Целевой массив
+                    dest: arr,            // Целевой массив
                     source1: B,    // Первый источник
                     source2: C,    // Второй источник
                     runLength: runLength,   // Текущий размер серии
                     source1Length: length1, // Реальная длина данных в source1
-                    source2Length: length2 // Реальная длина данных в source2
+                    source2Length: length2, // Реальная длина данных в source2
+                    comparisons: ref comparisons,
+                    assignments: ref assignments
                 );
 
-                // Подготовка к следующей итерации:
-                runLength *= 2; // Удваиваем длину серии согласно алгоритму
+                runLength *= 2;
             }
             endTime = Environment.TickCount;
             return new InfoSort
@@ -617,23 +613,21 @@ namespace Laba_12
             int[] source,
             int[] dest1,
             int[] dest2,
-            int runLength)
+            int runLength,
+            ref int comparisons, ref int assignments)
         {
-            int dest1Index = 0; // Текущая позиция записи в dest1
-            int dest2Index = 0; // Текущая позиция записи в dest2
-            bool writeToFirst = true; // Флаг текущего массива для записи
+            int dest1Index = 0;
+            int dest2Index = 0;
+            bool writeToFirst = true;
 
-            // Проход по всему исходному массиву блоками по runLength элементов
+
             for (int i = 0; i < source.Length;)
             {
-                // Вычисляем количество элементов для текущей серии:
-                // Минимум между runLength и оставшимися элементами
+
                 int elementsToWrite = Math.Min(runLength, source.Length - i);
 
-                // Распределение серии между массивами
                 if (writeToFirst)
                 {
-                    // Копируем серию в dest1
                     Array.Copy(
                         sourceArray: source,        // Откуда копируем
                         sourceIndex: i,             // Стартовая позиция в источнике
@@ -646,57 +640,39 @@ namespace Laba_12
                 }
                 else
                 {
-                    // Аналогично для dest2
                     Array.Copy(source, i, dest2, dest2Index, elementsToWrite);
                     dest2Index += elementsToWrite;
                     assignments += elementsToWrite;
                 }
 
-                // Сдвигаем указатель исходного массива
                 i += elementsToWrite;
-                // Меняем целевой массив для следующей серии
                 writeToFirst = !writeToFirst;
             }
 
-            return (dest1Index, dest2Index); // Фактические размеры данных
+            return (dest1Index, dest2Index);
         }
 
-        /// <summary>
-        /// Фаза слияния: объединение двух массивов в один отсортированный
-        /// </summary>
-        /// <param name="dest">Целевой массив для результатов</param>
-        /// <param name="source1">Первый массив-источник</param>
-        /// <param name="source2">Второй массив-источник</param>
-        /// <param name="runLength">Текущий размер серии</param>
-        /// <param name="source1Length">Реальная длина данных в source1</param>
-        /// <param name="source2Length">Реальная длина данных в source2</param>
-        /// <param name="ComparisonCount">Счетчик сравнений</param>
-        /// <param name="AssignmentCount">Счетчик присваиваний</param>
-        /// <returns>True, если сортировка завершена</returns>
         private bool MergeArrays(
             int[] dest,
             int[] source1,
             int[] source2,
             int runLength,
             int source1Length,
-            int source2Length)
+            int source2Length,
+            ref int comparisons, ref int assignments)
         {
-            int index1 = 0; // Указатель текущей позиции в source1
-            int index2 = 0; // Указатель текущей позиции в source2
-            int destIndex = 0; // Указатель записи в dest
+            int index1 = 0;
+            int index2 = 0;
+            int destIndex = 0;
 
-            // Цикл попарного слияния серий
             while (index1 < source1Length && index2 < source2Length)
             {
-                // Границы текущих серий в обоих массивах:
                 int end1 = Math.Min(index1 + runLength, source1Length);
                 int end2 = Math.Min(index2 + runLength, source2Length);
 
-                // Слияние двух серий 
                 while (index1 < end1 && index2 < end2)
                 {
-                    // Сравнение элементов 
-                    comparisons++; // Учет операции сравнения
+                    comparisons++;
                     if (source1[index1] <= source2[index2])
                     {
                         dest[destIndex++] = source1[index1++];
@@ -705,17 +681,15 @@ namespace Laba_12
                     {
                         dest[destIndex++] = source2[index2++];
                     }
-                    assignments++; // Учет перемещения элемента
+                    assignments++;
                 }
 
-                // Докопирование остатков из первой серии (если есть)
                 while (index1 < end1)
                 {
                     dest[destIndex++] = source1[index1++];
                     assignments++;
                 }
 
-                // Докопирование остатков из второй серии (если есть)
                 while (index2 < end2)
                 {
                     dest[destIndex++] = source2[index2++];
@@ -723,31 +697,28 @@ namespace Laba_12
                 }
             }
 
-            // Докопирование оставшихся элементов source1 (если массивы разной длины)
             while (index1 < source1Length)
             {
                 dest[destIndex++] = source1[index1++];
                 assignments++;
             }
 
-            // Докопирование оставшихся элементов source2
             while (index2 < source2Length)
             {
                 dest[destIndex++] = source2[index2++];
                 assignments++;
             }
 
-            // Проверка условия завершения:
-            // Если размер серии превысил длину массива - сортировка завершена
             return runLength >= dest.Length;
         }
 
-        private static int singleAssignments = 0;
-        private static int singleComparisons = 0;
-
-        private (int, int, int) doSimple1fSort(ref int[] aFile)
+        private InfoSort SinglePhaseMergeSort(int[] arr)
         {
-            int comparsions = 0, permutations = 0;
+            int comparisons = 0;
+            int assignments = 0;
+
+            int[] aFile = new int[arr.Length];
+            Array.Copy(arr, arr, arr.Length);
 
             int[] bFile = new int[aFile.Length];
             int[] cFile = new int[aFile.Length];
@@ -764,35 +735,66 @@ namespace Laba_12
 
             int start = Environment.TickCount;
 
-            (bPointer, cPointer) = SplitArray(aFile, ref bFile, ref cFile, sequenceLength);
+            (bPointer, cPointer) = SplitArray(aFile, bFile, cFile, sequenceLength, ref comparisons, ref assignments);
 
             for (int i = 1; i <= aFile.Length; i *= 2)
             {
                 if (isFirst)
-                    (dPointer, ePointer) = TransferItems(i, ref bFile, ref bPointer, ref cFile, ref cPointer, ref dFile, ref dPointer, ref eFile, ref ePointer, ref comparsions, ref permutations);
+                    (dPointer, ePointer) = TransferItems(
+                        i,
+                        ref bFile,
+                        ref bPointer,
+                        ref cFile,
+                        ref cPointer,
+                        ref dFile,
+                        ref dPointer,
+                        ref eFile,
+                        ref ePointer,
+                        ref comparisons,
+                        ref assignments);
                 else
-                    (bPointer, cPointer) = TransferItems(i, ref dFile, ref dPointer, ref eFile, ref ePointer, ref bFile, ref bPointer, ref cFile, ref cPointer, ref comparsions, ref permutations);
+                    (bPointer, cPointer) = TransferItems(
+                        i,
+                        ref dFile,
+                        ref dPointer,
+                        ref eFile,
+                        ref ePointer,
+                        ref bFile,
+                        ref bPointer,
+                        ref cFile,
+                        ref cPointer,
+                        ref comparisons,
+                        ref assignments);
                 isFirst = !isFirst;
             }
             if (isFirst)
-                MergeArrays(bFile, bPointer, cFile, cPointer, ref aFile, sequenceLength);
+                MergeArrays(aFile, cFile, bFile, sequenceLength, cPointer, bPointer, ref comparisons, ref assignments);
             else
-                MergeArrays(dFile, dPointer, eFile, ePointer, ref aFile, sequenceLength);
+                MergeArrays(aFile, dFile, eFile, sequenceLength, dPointer, ePointer, ref comparisons, ref assignments);
 
             int elapsedTime = Environment.TickCount - start;
 
-            return (comparsions, permutations, elapsedTime);
+            return new InfoSort
+            {
+                Assigments = assignments,
+                Comparisons = comparisons,
+                Time = elapsedTime,
+                Sorted = IsArraySorted(aFile) ? "Да" : "Нет"
+            };
+
         }
+
+
 
         private (int, int) TransferItems(int sequenceLength,
             ref int[] source1, ref int source1Pointer,
             ref int[] source2, ref int source2Pointer,
             ref int[] dest1, ref int dest1Pointer,
             ref int[] dest2, ref int dest2Pointer,
-            ref int comparsions, ref int permutations)
+            ref int comparisons, ref int assignments)
         {
 
-            bool file = true;
+            bool flag = true;
             int index1 = 0;
             int index2 = 0;
 
@@ -801,18 +803,18 @@ namespace Laba_12
 
             while (index1 < source1Pointer || index2 < source2Pointer)
             {
-                comparsions++;
+                comparisons++;
 
                 long curFirst = sequenceLength;
                 long curSecond = sequenceLength;
 
                 while (curFirst != 0 && curSecond != 0 && index1 < source1Pointer && index2 < source2Pointer)
                 {
-                    comparsions++;
-                    permutations++;
+                    comparisons++;
+                    assignments++;
                     if (source1[index1] <= source2[index2])
                     {
-                        if (file)
+                        if (flag)
                             dest1[count1++] = source1[index1++];
                         else
                             dest2[count2++] = source1[index1++];
@@ -820,7 +822,7 @@ namespace Laba_12
                     }
                     else
                     {
-                        if (file) dest1[count1++] = source2[index2++];
+                        if (flag) dest1[count1++] = source2[index2++];
                         else dest2[count2++] = source2[index2++];
                         curSecond--;
                     }
@@ -828,8 +830,8 @@ namespace Laba_12
 
                 while (curFirst != 0 && index1 < source1Pointer)
                 {
-                    permutations++;
-                    if (file)
+                    assignments++;
+                    if (flag)
                         dest1[count1++] = source1[index1++];
                     else
                         dest2[count2++] = source1[index1++];
@@ -838,17 +840,201 @@ namespace Laba_12
 
                 while (curSecond != 0 && index2 < source2Pointer)
                 {
-                    permutations++;
-                    if (file)
+                    assignments++;
+                    if (flag)
                         dest1[count1++] = source2[index2++];
                     else
                         dest2[count2++] = source2[index2++];
                     curSecond--;
                 }
-                file = !file;
+                flag = !flag;
             }
 
             return (count1, count2);
+        }
+
+        /// <summary>
+        /// Двухфазная сортировка естественным слиянием
+        /// </summary>
+        /// <param name="array">Ссылка на сортируемый массив</param>
+        /// <returns>
+        /// Кортеж с метриками:
+        /// comparisons - количество сравнений элементов
+        /// permutations - количество перестановок элементов
+        /// time - время выполнения в миллисекундах
+        /// </returns>
+        public static (int comparisons, int permutations, long time) TwoPhaseNaturalMergeSort(ref int[] array)
+        {
+            // Инициализация счетчиков операций
+            int comparisons = 0, permutations = 0;
+            // Засекаем время начала выполнения сортировки
+            int start = Environment.TickCount;
+
+            // Создаем два вспомогательных массива для разделения исходного массива
+            int[] bArray = new int[array.Length];
+            int[] cArray = new int[array.Length];
+
+            bool needToContinue;
+            do
+            {
+                // Фаза разделения: разбиваем массив на подмассивы по сериям
+                (int bSize, int cSize) = NaturalSplit(array, bArray, cArray, ref comparisons, ref permutations);
+
+                // Фаза слияния: объединяем подмассивы обратно в исходный массив
+                needToContinue = NaturalMerge(ref array, bArray, bSize, cArray, cSize, ref comparisons, ref permutations);
+
+            } while (needToContinue); // Повторяем, пока в массиве больше одной серии
+
+            // Вычисляем общее время выполнения
+            int end = Environment.TickCount - start;
+            return (comparisons, permutations, end);
+        }
+
+        /// <summary>
+        /// Разделяет исходный массив на два подмассива
+        /// </summary>
+        /// <param name="source">Исходный массив</param>
+        /// <param name="bArray">Первый вспомогательный массив</param>
+        /// <param name="cArray">Второй вспомогательный массив</param>
+        /// <param name="comparisons">Счетчик сравнений</param>
+        /// <param name="permutations">Счетчик перестановок</param>
+        /// <returns>Размеры заполненных подмассивов (bSize, cSize)</returns>
+        private static (int bSize, int cSize) NaturalSplit(int[] source, int[] bArray, int[] cArray,
+            ref int comparisons, ref int permutations)
+        {
+            // Индексы для записи в подмассивы
+            int bIndex = 0, cIndex = 0;
+            // Флаг для переключения между подмассивами (true - пишем в bArray, false - в cArray)
+            bool writeToB = true;
+            // Хранит предыдущее значение для определения конца серии
+            int lastValue = int.MinValue;
+
+            // Проходим по всем элементам исходного массива
+            for (int i = 0; i < source.Length; i++)
+            {
+                int current = source[i]; // Текущий элемент
+                comparisons++; // Увеличиваем счетчик сравнений
+
+                // Определяем конец серии (текущий элемент меньше предыдущего)
+                if (current < lastValue)
+                {
+                    // При обнаружении конца серии переключаем целевой подмассив
+                    writeToB = !writeToB;
+                }
+
+                // Записываем элемент в соответствующий подмассив
+                if (writeToB)
+                {
+                    bArray[bIndex++] = current;
+                }
+                else
+                {
+                    cArray[cIndex++] = current;
+                }
+                permutations++; // Увеличиваем счетчик перестановок
+
+                lastValue = current; // Сохраняем текущее значение для следующей итерации
+            }
+
+            // Возвращаем размеры заполненных подмассивов
+            return (bIndex, cIndex);
+        }
+        /// <summary>
+        /// Сливает два подмассива обратно в исходный массив, сохраняя порядок
+        /// </summary>
+        /// <param name="dest">Исходный массив (результат слияния)</param>
+        /// <param name="bArray">Первый подмассив</param>
+        /// <param name="bSize">Размер первого подмассива</param>
+        /// <param name="cArray">Второй подмассив</param>
+        /// <param name="cSize">Размер второго подмассива</param>
+        /// <param name="comparisons">Счетчик сравнений</param>
+        /// <param name="permutations">Счетчик перестановок</param>
+        /// <returns>true, если остались серии для следующего прохода</returns>
+        private static bool NaturalMerge(ref int[] dest, int[] bArray, int bSize, int[] cArray, int cSize,
+            ref int comparisons, ref int permutations)
+        {
+            // Индексы для подмассивов и результирующего массива
+            int bIndex = 0, cIndex = 0, destIndex = 0;
+            // Флаг наличия более одной серии
+            bool hasMoreThanOneSeries = false;
+
+            // Пока есть элементы в любом из подмассивов
+            while (bIndex < bSize || cIndex < cSize)
+            {
+                // Находим концы текущих серий в обоих подмассивах
+                int bSeriesEnd = FindSeriesEnd(bArray, bIndex, bSize, ref comparisons, ref permutations);
+                int cSeriesEnd = FindSeriesEnd(cArray, cIndex, cSize, ref comparisons, ref permutations);
+
+                // Слияние двух серий 
+                while (bIndex < bSeriesEnd && cIndex < cSeriesEnd)
+                {
+                    comparisons++; // Увеличиваем счетчик сравнений
+
+                    // Выбираем меньший элемент из двух подмассивов
+                    if (bArray[bIndex] <= cArray[cIndex])
+                    {
+                        dest[destIndex++] = bArray[bIndex++];
+                    }
+                    else
+                    {
+                        dest[destIndex++] = cArray[cIndex++];
+                    }
+                    permutations++; // Увеличиваем счетчик перестановок
+                }
+
+                // Дописываем оставшиеся элементы из первого подмассива
+                while (bIndex < bSeriesEnd)
+                {
+                    dest[destIndex++] = bArray[bIndex++];
+                    permutations++;
+                }
+
+                // Дописываем оставшиеся элементы из второго подмассива
+                while (cIndex < cSeriesEnd)
+                {
+                    dest[destIndex++] = cArray[cIndex++];
+                    permutations++;
+                }
+
+                // Проверяем, есть ли еще серии в подмассивах
+                if (bIndex < bSize || cIndex < cSize)
+                {
+                    hasMoreThanOneSeries = true;
+                }
+            }
+
+            return hasMoreThanOneSeries;
+        }
+
+        /// <summary>
+        /// Находит конец текущей упорядоченной последовательности (серии) в массиве
+        /// </summary>
+        /// <param name="array">Исследуемый массив</param>
+        /// <param name="start">Начальный индекс</param>
+        /// <param name="end">Конечный индекс</param>
+        /// <param name="comparisons">Счетчик сравнений</param>
+        /// <param name="permutations">Счетчик перестановок</param>
+        /// <returns>Индекс конца серии</returns>
+        private static int FindSeriesEnd(int[] array, int start, int end, ref int comparisons, ref int permutations)
+        {
+            // Если начальный индекс выходит за границы
+            if (start >= end) return start;
+
+            int i = start;
+            // Ищем место, где нарушается упорядоченность
+            while (i < end - 1)
+            {
+                comparisons++; // Увеличиваем счетчик сравнений
+                               // Если текущий элемент больше следующего - серия закончилась
+                if (array[i] > array[i + 1])
+                {
+                    return i + 1;
+                }
+                i++;
+            }
+
+            // Если дошли до конца - серия занимает весь оставшийся массив
+            return end;
         }
 
         public bool IsArraySorted(int[] arr)
