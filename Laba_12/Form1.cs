@@ -15,7 +15,7 @@ namespace Laba_12
     public partial class Form1 : Form
     {
         String[] arraySortNames = new String[] { "Простое 2ф", "Простое 1ф", "Естественное 2ф", "Естественное 1ф", "Поглощение" };
-        bool[] arraySortChecked = new bool[] { true, true, false, false, false };
+        bool[] arraySortChecked = new bool[] { true, true, true, true, false };
         const int ROWS_COUNT = 5;
         int arraySize;
         int[] array;
@@ -80,11 +80,19 @@ namespace Laba_12
             }
             if (arraySortChecked[2])
             {
-                InfoSort sortOnePhaseNaturalMerge = TwoPhaseNaturalMergeSort(array);
-                dataGridView1.Rows[2].Cells[timeCell].Value = sortOnePhaseNaturalMerge.Time;
-                dataGridView1.Rows[2].Cells[assigmentCell].Value = sortOnePhaseNaturalMerge.Assigments;
-                dataGridView1.Rows[2].Cells[comparisonsCell].Value = sortOnePhaseNaturalMerge.Comparisons;
-                dataGridView1.Rows[2].Cells[sortedCell].Value = sortOnePhaseNaturalMerge.Sorted;
+                InfoSort sortTwoPhaseNaturalMerge = TwoPhaseNaturalMergeSort(array);
+                dataGridView1.Rows[2].Cells[timeCell].Value = sortTwoPhaseNaturalMerge.Time;
+                dataGridView1.Rows[2].Cells[assigmentCell].Value = sortTwoPhaseNaturalMerge.Assigments;
+                dataGridView1.Rows[2].Cells[comparisonsCell].Value = sortTwoPhaseNaturalMerge.Comparisons;
+                dataGridView1.Rows[2].Cells[sortedCell].Value = sortTwoPhaseNaturalMerge.Sorted;
+            }
+            if (arraySortChecked[3])
+            {
+                InfoSort sortOnePhaseNaturarMerge = OnePhaseNaturalMergeSort(array);
+                dataGridView1.Rows[3].Cells[timeCell].Value = sortOnePhaseNaturarMerge.Time;
+                dataGridView1.Rows[3].Cells[assigmentCell].Value = sortOnePhaseNaturarMerge.Assigments;
+                dataGridView1.Rows[3].Cells[comparisonsCell].Value = sortOnePhaseNaturarMerge.Comparisons;
+                dataGridView1.Rows[3].Cells[sortedCell].Value = sortOnePhaseNaturarMerge.Sorted;
             }
         }
         #region 
@@ -551,7 +559,6 @@ namespace Laba_12
             int startTime = Environment.TickCount;
             int endTime;
 
-            // Крайний случай: массив пуст или имеет 1 элемент
             if (arr == null || arr.Length <= 1)
             {
                 endTime = Environment.TickCount;
@@ -573,24 +580,15 @@ namespace Laba_12
 
             while (!sorted)
             {
-                // ФАЗА 1: РАЗДЕЛЕНИЕ 
-                // Разбиваем исходный массив на два вспомогательных:
-                // - tempArray1 получает 1-ю, 3-ю, 5-ю... серии 
-                // - tempArray2 получает 2-ю, 4-ю, 6-ю... серии
-                // Серия - подмассив длиной runLength
                 var (length1, length2) = SplitArray(arr, B, C, runLength, ref comparisons, ref assignments);
 
-                // ФАЗА 2: СЛИЯНИЕ 
-                // Объединяем серии из двух массивов обратно в исходный:
-                // - Пары серий сливаются в упорядоченные последовательности
-                // - Длина результирующих серий удваивается (runLength * 2)
                 sorted = MergeArrays(
-                    dest: arr,            // Целевой массив
-                    source1: B,    // Первый источник
-                    source2: C,    // Второй источник
-                    runLength: runLength,   // Текущий размер серии
-                    source1Length: length1, // Реальная длина данных в source1
-                    source2Length: length2, // Реальная длина данных в source2
+                    dest: arr,            
+                    source1: B,    
+                    source2: C,   
+                    runLength: runLength,  
+                    source1Length: length1, 
+                    source2Length: length2, 
                     comparisons: ref comparisons,
                     assignments: ref assignments
                 );
@@ -637,14 +635,14 @@ namespace Laba_12
                 if (writeToFirst)
                 {
                     Array.Copy(
-                        sourceArray: source,        // Откуда копируем
-                        sourceIndex: i,             // Стартовая позиция в источнике
-                        destinationArray: dest1,    // Куда копируем
-                        destinationIndex: dest1Index, // Стартовая позиция в приемнике
-                        length: elementsToWrite     // Количество элементов
+                        sourceArray: source,        
+                        sourceIndex: i,             
+                        destinationArray: dest1,    
+                        destinationIndex: dest1Index,
+                        length: elementsToWrite     
                     );
-                    dest1Index += elementsToWrite; // Сдвигаем указатель записи
-                    assignments += elementsToWrite; // Учет перемещений
+                    dest1Index += elementsToWrite; 
+                    assignments += elementsToWrite;
                 }
                 else
                 {
@@ -912,25 +910,20 @@ namespace Laba_12
         private static (int bSize, int cSize) NaturalSplit(int[] source, int[] bArray, int[] cArray,
             ref int comparisons, ref int permutations)
         {
-            // Индексы для записи в подмассивы
             int bIndex = 0, cIndex = 0;
             bool writeToB = true;
             int lastValue = int.MinValue;
 
-            // Проходим по всем элементам исходного массива
             for (int i = 0; i < source.Length; i++)
             {
-                int current = source[i]; // Текущий элемент
-                comparisons++; // Увеличиваем счетчик сравнений
+                int current = source[i]; 
+                comparisons++; 
 
-                // Определяем конец серии (текущий элемент меньше предыдущего)
                 if (current < lastValue)
                 {
-                    // При обнаружении конца серии переключаем целевой подмассив
                     writeToB = !writeToB;
                 }
 
-                // Записываем элемент в соответствующий подмассив
                 if (writeToB)
                 {
                     bArray[bIndex++] = current;
@@ -939,12 +932,11 @@ namespace Laba_12
                 {
                     cArray[cIndex++] = current;
                 }
-                permutations++; // Увеличиваем счетчик перестановок
+                permutations++; 
 
-                lastValue = current; // Сохраняем текущее значение для следующей итерации
+                lastValue = current;
             }
 
-            // Возвращаем размеры заполненных подмассивов
             return (bIndex, cIndex);
         }
         /// <summary>
@@ -961,24 +953,18 @@ namespace Laba_12
         private static bool NaturalMerge(ref int[] dest, int[] bArray, int bSize, int[] cArray, int cSize,
             ref int comparisons, ref int permutations)
         {
-            // Индексы для подмассивов и результирующего массива
             int bIndex = 0, cIndex = 0, destIndex = 0;
-            // Флаг наличия более одной серии
             bool hasMoreThanOneSeries = false;
 
-            // Пока есть элементы в любом из подмассивов
             while (bIndex < bSize || cIndex < cSize)
             {
-                // Находим концы текущих серий в обоих подмассивах
                 int bSeriesEnd = FindSeriesEnd(bArray, bIndex, bSize, ref comparisons, ref permutations);
                 int cSeriesEnd = FindSeriesEnd(cArray, cIndex, cSize, ref comparisons, ref permutations);
 
-                // Слияние двух серий 
                 while (bIndex < bSeriesEnd && cIndex < cSeriesEnd)
                 {
-                    comparisons++; // Увеличиваем счетчик сравнений
+                    comparisons++; 
 
-                    // Выбираем меньший элемент из двух подмассивов
                     if (bArray[bIndex] <= cArray[cIndex])
                     {
                         dest[destIndex++] = bArray[bIndex++];
@@ -987,24 +973,21 @@ namespace Laba_12
                     {
                         dest[destIndex++] = cArray[cIndex++];
                     }
-                    permutations++; // Увеличиваем счетчик перестановок
+                    permutations++; 
                 }
 
-                // Дописываем оставшиеся элементы из первого подмассива
                 while (bIndex < bSeriesEnd)
                 {
                     dest[destIndex++] = bArray[bIndex++];
                     permutations++;
                 }
 
-                // Дописываем оставшиеся элементы из второго подмассива
                 while (cIndex < cSeriesEnd)
                 {
                     dest[destIndex++] = cArray[cIndex++];
                     permutations++;
                 }
 
-                // Проверяем, есть ли еще серии в подмассивах
                 if (bIndex < bSize || cIndex < cSize)
                 {
                     hasMoreThanOneSeries = true;
@@ -1025,15 +1008,12 @@ namespace Laba_12
         /// <returns>Индекс конца серии</returns>
         private static int FindSeriesEnd(int[] array, int start, int end, ref int comparisons, ref int permutations)
         {
-            // Если начальный индекс выходит за границы
             if (start >= end) return start;
 
             int i = start;
-            // Ищем место, где нарушается упорядоченность
             while (i < end - 1)
             {
-                comparisons++; // Увеличиваем счетчик сравнений
-                               // Если текущий элемент больше следующего - серия закончилась
+                comparisons++; 
                 if (array[i] > array[i + 1])
                 {
                     return i + 1;
@@ -1041,10 +1021,138 @@ namespace Laba_12
                 i++;
             }
 
-            // Если дошли до конца - серия занимает весь оставшийся массив
             return end;
         }
 
+        /// <summary>
+        /// Однофазная сортировка естественным слиянием
+        /// </summary>
+        /// <param name="array">Ссылка на сортируемый массив</param>
+        /// <returns>
+        /// Кортеж с метриками:
+        /// comparisons - количество сравнений элементов
+        /// permutations - количество перестановок элементов
+        /// time - время выполнения в миллисекундах
+        /// </returns>
+        public static (int comparisons, int permutations, long time) DoOnePhaseNaturalMergeSort(ref int[] array)
+        {
+            // Инициализация счетчиков и таймера
+            int comparisons = 0, permutations = 0;
+            int start = Environment.TickCount;
+
+            // Крайний случай: массив из 0 или 1 элемента уже отсортирован
+            if (array.Length <= 1)
+            {
+                return (comparisons, permutations, Environment.TickCount - start);
+            }
+
+            // Создаем временный буфер того же размера
+            int[] temp = new int[array.Length];
+
+            // Рабочие указатели:
+            int[] source = array;   // Текущий массив-источник данных
+            int[] destination = temp; // Целевой массив для слияния
+            bool isSorted = false;  // Флаг завершения сортировки
+
+            // Основной цикл сортировки
+            while (!isSorted)
+            {
+                int destIndex = 0;  // Индекс записи в целевой массив
+                int i = 0;          // Текущая позиция в исходном массиве
+
+                // Проход по всем сериям в исходном массиве
+                while (i < source.Length)
+                {
+                    // Находим границы двух соседних серий:
+                    int end1 = FindSeriesEnd(source, i, source.Length, ref comparisons, ref permutations); // Конец первой серии
+                    int end2 = FindSeriesEnd(source, end1, source.Length, ref comparisons, ref permutations); // Конец второй серии
+
+                    // Сливаем найденные серии в целевой массив
+                    MergeTwoSeries(source, i, end1, end2, destination, ref destIndex, ref comparisons, ref permutations);
+
+                    // Переходим к следующей паре серий
+                    i = end2;
+                }
+
+                // Проверяем, полностью ли отсортирован массив
+                int seriesEnd = FindSeriesEnd(destination, 0, destIndex, ref comparisons, ref permutations);
+                isSorted = (seriesEnd == destIndex); // Если вся последовательность - одна серия
+
+                // Если не отсортирован, меняем source и destination местами
+                if (!isSorted)
+                {
+                    // Обмен ссылками без копирования данных
+                    int[] swap = source;
+                    source = destination;
+                    destination = swap;
+                }
+            }
+
+            // Если результат находится во временном буфере, копируем обратно
+            if (destination == temp)
+            {
+                Array.Copy(temp, array, array.Length);
+            }
+
+            // Расчет времени выполнения
+            int endTime = Environment.TickCount - start;
+            return (comparisons, permutations, endTime);
+        }
+
+        /// <summary>
+        /// Слияние двух соседних серий
+        /// </summary>
+        /// <param name="source">Массив-источник</param>
+        /// <param name="start1">Начало первой серии</param>
+        /// <param name="end1">Конец первой серии (начало второй)</param>
+        /// <param name="end2">Конец второй серии</param>
+        /// <param name="destination">Целевой массив</param>
+        /// <param name="destIndex">Текущий индекс в целевом массиве</param>
+        /// <param name="comparisons">Счетчик сравнений</param>
+        /// <param name="permutations">Счетчик перестановок</param>
+        private static void MergeTwoSeries(
+            int[] source,
+            int start1,
+            int end1,
+            int end2,
+            int[] destination,
+            ref int destIndex,
+            ref int comparisons,
+            ref int permutations)
+        {
+            int i = start1; // Указатель на первую серию
+            int j = end1;   // Указатель на вторую серию
+
+            // Попарное сравнение элементов из обеих серий
+            while (i < end1 && j < end2)
+            {
+                comparisons++; // Учет операции сравнения
+
+                // Выбор меньшего элемента
+                if (source[i] <= source[j])
+                {
+                    destination[destIndex++] = source[i++];
+                    permutations++; // Учет перемещения
+                }
+                else
+                {
+                    destination[destIndex++] = source[j++];
+                    permutations++; // Учет перемещения
+                }
+            }// Дозапись остатков первой серии
+            while (i < end1)
+            {
+                destination[destIndex++] = source[i++];
+                permutations++;
+            }
+
+            // Дозапись остатков второй серии
+            while (j < end2)
+            {
+                destination[destIndex++] = source[j++];
+                permutations++;
+            }
+        }
         public bool IsArraySorted(int[] arr)
         {
             for (int i = 0; i < arr.Length - 1; i++)
