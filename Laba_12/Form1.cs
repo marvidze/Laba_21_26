@@ -583,12 +583,12 @@ namespace Laba_12
                 var (length1, length2) = SplitArray(arr, B, C, runLength, ref comparisons, ref assignments);
 
                 sorted = MergeArrays(
-                    dest: arr,            
-                    source1: B,    
-                    source2: C,   
-                    runLength: runLength,  
-                    source1Length: length1, 
-                    source2Length: length2, 
+                    dest: arr,
+                    source1: B,
+                    source2: C,
+                    runLength: runLength,
+                    source1Length: length1,
+                    source2Length: length2,
                     comparisons: ref comparisons,
                     assignments: ref assignments
                 );
@@ -635,13 +635,13 @@ namespace Laba_12
                 if (writeToFirst)
                 {
                     Array.Copy(
-                        sourceArray: source,        
-                        sourceIndex: i,             
-                        destinationArray: dest1,    
+                        sourceArray: source,
+                        sourceIndex: i,
+                        destinationArray: dest1,
                         destinationIndex: dest1Index,
-                        length: elementsToWrite     
+                        length: elementsToWrite
                     );
-                    dest1Index += elementsToWrite; 
+                    dest1Index += elementsToWrite;
                     assignments += elementsToWrite;
                 }
                 else
@@ -885,7 +885,7 @@ namespace Laba_12
 
                 flag = NaturalMerge(ref array, bArray, bSize, cArray, cSize, ref comparisons, ref permutations);
 
-            } while (flag); 
+            } while (flag);
 
             int resultTime = Environment.TickCount - start;
 
@@ -916,8 +916,8 @@ namespace Laba_12
 
             for (int i = 0; i < source.Length; i++)
             {
-                int current = source[i]; 
-                comparisons++; 
+                int current = source[i];
+                comparisons++;
 
                 if (current < lastValue)
                 {
@@ -932,7 +932,7 @@ namespace Laba_12
                 {
                     cArray[cIndex++] = current;
                 }
-                permutations++; 
+                permutations++;
 
                 lastValue = current;
             }
@@ -963,7 +963,7 @@ namespace Laba_12
 
                 while (bIndex < bSeriesEnd && cIndex < cSeriesEnd)
                 {
-                    comparisons++; 
+                    comparisons++;
 
                     if (bArray[bIndex] <= cArray[cIndex])
                     {
@@ -973,7 +973,7 @@ namespace Laba_12
                     {
                         dest[destIndex++] = cArray[cIndex++];
                     }
-                    permutations++; 
+                    permutations++;
                 }
 
                 while (bIndex < bSeriesEnd)
@@ -1013,7 +1013,7 @@ namespace Laba_12
             int i = start;
             while (i < end - 1)
             {
-                comparisons++; 
+                comparisons++;
                 if (array[i] > array[i + 1])
                 {
                     return i + 1;
@@ -1024,135 +1024,395 @@ namespace Laba_12
             return end;
         }
 
-        /// <summary>
-        /// Однофазная сортировка естественным слиянием
-        /// </summary>
-        /// <param name="array">Ссылка на сортируемый массив</param>
-        /// <returns>
-        /// Кортеж с метриками:
-        /// comparisons - количество сравнений элементов
-        /// permutations - количество перестановок элементов
-        /// time - время выполнения в миллисекундах
-        /// </returns>
-        public static (int comparisons, int permutations, long time) DoOnePhaseNaturalMergeSort(ref int[] array)
+        private bool MergeNaturalRuns(
+    int[] dest,
+    int[] source1,
+    int[] source2,
+    int source1Length,
+    int source2Length,
+    ref int comparisons, ref int assignments)
         {
-            // Инициализация счетчиков и таймера
-            int comparisons = 0, permutations = 0;
-            int start = Environment.TickCount;
+            int index1 = 0;
+            int index2 = 0;
+            int destIndex = 0;
 
-            // Крайний случай: массив из 0 или 1 элемента уже отсортирован
-            if (array.Length <= 1)
+            while (index1 < source1Length && index2 < source2Length)
             {
-                return (comparisons, permutations, Environment.TickCount - start);
-            }
+                // Находим концы естественных серий
+                int end1 = FindNaturalRunEnd(source1, index1, source1Length, ref comparisons);
+                int end2 = FindNaturalRunEnd(source2, index2, source2Length, ref comparisons);
 
-            // Создаем временный буфер того же размера
-            int[] temp = new int[array.Length];
-
-            // Рабочие указатели:
-            int[] source = array;   // Текущий массив-источник данных
-            int[] destination = temp; // Целевой массив для слияния
-            bool isSorted = false;  // Флаг завершения сортировки
-
-            // Основной цикл сортировки
-            while (!isSorted)
-            {
-                int destIndex = 0;  // Индекс записи в целевой массив
-                int i = 0;          // Текущая позиция в исходном массиве
-
-                // Проход по всем сериям в исходном массиве
-                while (i < source.Length)
+                // Сливаем две естественные серии
+                while (index1 < end1 && index2 < end2)
                 {
-                    // Находим границы двух соседних серий:
-                    int end1 = FindSeriesEnd(source, i, source.Length, ref comparisons, ref permutations); // Конец первой серии
-                    int end2 = FindSeriesEnd(source, end1, source.Length, ref comparisons, ref permutations); // Конец второй серии
-
-                    // Сливаем найденные серии в целевой массив
-                    MergeTwoSeries(source, i, end1, end2, destination, ref destIndex, ref comparisons, ref permutations);
-
-                    // Переходим к следующей паре серий
-                    i = end2;
+                    comparisons++;
+                    if (source1[index1] <= source2[index2])
+                    {
+                        dest[destIndex++] = source1[index1++];
+                    }
+                    else
+                    {
+                        dest[destIndex++] = source2[index2++];
+                    }
+                    assignments++;
                 }
 
-                // Проверяем, полностью ли отсортирован массив
-                int seriesEnd = FindSeriesEnd(destination, 0, destIndex, ref comparisons, ref permutations);
-                isSorted = (seriesEnd == destIndex); // Если вся последовательность - одна серия
-
-                // Если не отсортирован, меняем source и destination местами
-                if (!isSorted)
+                while (index1 < end1)
                 {
-                    // Обмен ссылками без копирования данных
-                    int[] swap = source;
-                    source = destination;
-                    destination = swap;
+                    dest[destIndex++] = source1[index1++];
+                    assignments++;
+                }
+
+                while (index2 < end2)
+                {
+                    dest[destIndex++] = source2[index2++];
+                    assignments++;
                 }
             }
 
-            // Если результат находится во временном буфере, копируем обратно
-            if (destination == temp)
+            while (index1 < source1Length)
             {
-                Array.Copy(temp, array, array.Length);
+                dest[destIndex++] = source1[index1++];
+                assignments++;
             }
 
-            // Расчет времени выполнения
-            int endTime = Environment.TickCount - start;
-            return (comparisons, permutations, endTime);
+            while (index2 < source2Length)
+            {
+                dest[destIndex++] = source2[index2++];
+                assignments++;
+            }
+
+            return true;
         }
 
-        /// <summary>
-        /// Слияние двух соседних серий
-        /// </summary>
-        /// <param name="source">Массив-источник</param>
-        /// <param name="start1">Начало первой серии</param>
-        /// <param name="end1">Конец первой серии (начало второй)</param>
-        /// <param name="end2">Конец второй серии</param>
-        /// <param name="destination">Целевой массив</param>
-        /// <param name="destIndex">Текущий индекс в целевом массиве</param>
-        /// <param name="comparisons">Счетчик сравнений</param>
-        /// <param name="permutations">Счетчик перестановок</param>
-        private static void MergeTwoSeries(
-            int[] source,
-            int start1,
-            int end1,
-            int end2,
-            int[] destination,
-            ref int destIndex,
-            ref int comparisons,
-            ref int permutations)
+        private int FindNaturalRunEnd(int[] array, int start, int maxLength, ref int comparisons)
         {
-            int i = start1; // Указатель на первую серию
-            int j = end1;   // Указатель на вторую серию
+            if (start >= maxLength) return start;
 
-            // Попарное сравнение элементов из обеих серий
-            while (i < end1 && j < end2)
+            int end = start + 1;
+            while (end < maxLength)
             {
-                comparisons++; // Учет операции сравнения
+                comparisons++;
+                if (array[end] < array[end - 1])
+                    break;
+                end++;
+            }
+            return end;
+        }
 
-                // Выбор меньшего элемента
-                if (source[i] <= source[j])
+        private InfoSort OnePhaseNaturalMergeSort(int[] arr)
+        {
+            int comparisons = 0;
+            int assignments = 0;
+
+            int[] aFile = new int[arr.Length];
+            Array.Copy(arr, aFile, arr.Length);
+
+            int[] bFile = new int[aFile.Length];
+            int[] cFile = new int[aFile.Length];
+            int[] dFile = new int[aFile.Length];
+            int[] eFile = new int[aFile.Length];
+
+            int bPointer = 0;
+            int cPointer = 0;
+            int dPointer = 0;
+            int ePointer = 0;
+
+            bool isFirst = true;
+            bool sorted = false;
+
+            int start = Environment.TickCount;
+
+            // Первоначальное разделение на естественные серии
+            (bPointer, cPointer) = NaturalSplitArray(aFile, bFile, cFile, ref comparisons, ref assignments);
+
+            while (!sorted)
+            {
+                if (isFirst)
+                    (dPointer, ePointer, sorted) = NaturalTransferItems(
+                        ref bFile, ref bPointer,
+                        ref cFile, ref cPointer,
+                        ref dFile, ref dPointer,
+                        ref eFile, ref ePointer,
+                        ref comparisons, ref assignments);
+                else
+                    (bPointer, cPointer, sorted) = NaturalTransferItems(
+                        ref dFile, ref dPointer,
+                        ref eFile, ref ePointer,
+                        ref bFile, ref bPointer,
+                        ref cFile, ref cPointer,
+                        ref comparisons, ref assignments);
+
+                isFirst = !isFirst;
+            }
+
+            // Финализация результата
+            if (isFirst)
+                MergeNaturalRuns(aFile, cFile, bFile, cPointer, bPointer, ref comparisons, ref assignments);
+            else
+                MergeNaturalRuns(aFile, dFile, eFile, dPointer, ePointer, ref comparisons, ref assignments);
+
+            int elapsedTime = Environment.TickCount - start;
+
+            return new InfoSort
+            {
+                Assigments = assignments,
+                Comparisons = comparisons,
+                Time = elapsedTime,
+                Sorted = sorted ? "Да" : "Нет"
+            };
+        }
+
+        private (int, int) NaturalSplitArray(
+            int[] source,
+            int[] dest1, int[] dest2,
+            ref int comparisons, ref int assignments)
+        {
+            int dest1Index = 0;
+            int dest2Index = 0;
+            bool writeToFirst = true;
+
+            if (source.Length == 0) return (0, 0);
+
+            int lastValue = source[0];
+            dest1[dest1Index++] = source[0];
+            assignments++;
+
+            for (int i = 1; i < source.Length; i++)
+            {
+                comparisons++;
+                if (source[i] < lastValue)
                 {
-                    destination[destIndex++] = source[i++];
-                    permutations++; // Учет перемещения
+                    writeToFirst = !writeToFirst;
+                }
+
+                if (writeToFirst)
+                {
+                    dest1[dest1Index++] = source[i];
                 }
                 else
                 {
-                    destination[destIndex++] = source[j++];
-                    permutations++; // Учет перемещения
+                    dest2[dest2Index++] = source[i];
                 }
-            }// Дозапись остатков первой серии
-            while (i < end1)
-            {
-                destination[destIndex++] = source[i++];
-                permutations++;
+                assignments++;
+                lastValue = source[i];
             }
 
-            // Дозапись остатков второй серии
-            while (j < end2)
-            {
-                destination[destIndex++] = source[j++];
-                permutations++;
-            }
+            return (dest1Index, dest2Index);
         }
+
+        private (int, int, bool) NaturalTransferItems(
+            ref int[] source1, ref int source1Pointer,
+            ref int[] source2, ref int source2Pointer,
+            ref int[] dest1, ref int dest1Pointer,
+            ref int[] dest2, ref int dest2Pointer,
+            ref int comparisons, ref int assignments)
+        {
+            bool flag = true;
+            int index1 = 0;
+            int index2 = 0;
+
+            int count1 = 0;
+            int count2 = 0;
+            bool sorted = true;
+
+            while (index1 < source1Pointer || index2 < source2Pointer)
+            {
+                // Находим концы естественных серий
+                int end1 = FindNaturalRunEnd(source1, index1, source1Pointer, ref comparisons);
+                int end2 = FindNaturalRunEnd(source2, index2, source2Pointer, ref comparisons);
+
+                // Если есть хотя бы две серии - массив еще не отсортирован
+                if (index1 < source1Pointer && index2 < source2Pointer)
+                    sorted = false;
+
+                // Сливаем серии
+                while (index1 < end1 && index2 < end2)
+                {
+                    comparisons++;
+                    assignments++;
+                    if (source1[index1] <= source2[index2])
+                    {
+                        if (flag) dest1[count1++] = source1[index1++];
+                        else dest2[count2++] = source1[index1++];
+                    }
+                    else
+                    {
+                        if (flag) dest1[count1++] = source2[index2++];
+                        else dest2[count2++] = source2[index2++];
+                    }
+                }
+
+                while (index1 < end1)
+                {
+                    assignments++;
+                    if (flag) dest1[count1++] = source1[index1++];
+                    else dest2[count2++] = source1[index1++];
+                }
+
+                while (index2 < end2)
+                {
+                    assignments++;
+                    if (flag) dest1[count1++] = source2[index2++];
+                    else dest2[count2++] = source2[index2++];
+                }
+
+                flag = !flag;
+            }
+
+            return (count1, count2, sorted);
+        }
+
+        //public static InfoSort OnePhaseNaturalMergeSort(int[] arr)
+        //{
+        //    int comparisons = 0, permutations = 0;
+        //    int[] array = new int[arr.Length];
+        //    Array.Copy(arr, array, arr.Length);
+
+        //    int startTime = Environment.TickCount;
+
+        //    // Инициализация 4 вспомогательных буферов
+        //    int[][] buffers = new int[4][];
+        //    for (int i = 0; i < 4; i++)
+        //        buffers[i] = new int[array.Length];
+
+        //    bool sorted = false;
+        //    int currentSourceIndex = 0;  // Индекс текущего источника (0-3)
+        //    int currentDestIndex = 1;    // Индекс текущего приемника (0-3)
+
+        //    // Первый источник - исходный массив (имитируем как буфер 0)
+        //    Array.Copy(array, buffers[0], array.Length);
+
+        //    while (!sorted)
+        //    {
+        //        sorted = true;
+        //        int destPos = 0; // Позиция записи в буфер-приемник
+
+        //        int start = 0;
+        //        while (start < array.Length)
+        //        {
+        //            // Находим конец первой серии
+        //            int end1 = FindRunEnd(buffers[currentSourceIndex], start,
+        //                              ref comparisons, ref permutations);
+
+        //            // Находим конец второй серии
+        //            int end2 = (end1 < array.Length) ?
+        //                      FindRunEnd(buffers[currentSourceIndex], end1,
+        //                              ref comparisons, ref permutations) :
+        //                      array.Length;
+
+        //            if (end1 < array.Length && end2 <= array.Length)
+        //            {
+        //                // Сливаем две серии
+        //                MergeTwoRuns(
+        //                    buffers[currentSourceIndex], buffers[currentDestIndex],
+        //                    start, end1, end2, ref destPos,
+        //                    ref comparisons, ref permutations);
+        //                sorted = false;
+        //            }
+        //            else
+        //            {
+        //                // Копируем оставшуюся серию
+        //                CopyRun(
+        //                    buffers[currentSourceIndex], buffers[currentDestIndex],
+        //                    start, end1, ref destPos, ref permutations);
+        //            }
+
+        //            start = end2;
+        //        }
+
+        //        if (!sorted)
+        //        {
+        //            // Циклическое переключение буферов (0→1→2→3→0...)
+        //            currentSourceIndex = currentDestIndex;
+        //            currentDestIndex = (currentDestIndex + 1) % 4;
+        //        }
+        //    }
+
+        //    // Копируем результат из исходного буфера обратно в массив
+        //    if (currentSourceIndex != 0)
+        //    {
+        //        Array.Copy(buffers[currentSourceIndex], array, array.Length);
+        //        permutations += array.Length;
+        //    }
+
+        //    int elapsedTime = Environment.TickCount - startTime;
+
+        //    return new InfoSort
+        //    {
+        //        Comparisons = comparisons,
+        //        Assigments = permutations,
+        //        Time = elapsedTime,
+        //        Sorted = sorted ? "Да" : "Нет"
+        //    };
+        //}
+
+        //// (Реализации FindRunEnd, MergeTwoRuns и CopyRun остаются без изменений)
+        //// Находит конец текущей упорядоченной серии
+        //private static int FindRunEnd(int[] array, int start, ref int comparisons, ref int permutations)
+        //{
+        //    if (start >= array.Length) return start;
+
+        //    int end = start + 1;
+        //    while (end < array.Length)
+        //    {
+        //        comparisons++;
+        //        if (array[end] < array[end - 1])
+        //            break;
+        //        end++;
+        //    }
+        //    return end;
+        //}
+
+        //// Сливает две упорядоченные серии в одну
+        //private static void MergeTwoRuns(
+        //    int[] source, int[] dest,
+        //    int start1, int end1, int end2,
+        //    ref int destIndex,
+        //    ref int comparisons, ref int permutations)
+        //{
+        //    int i = start1;
+        //    int j = end1;
+
+        //    while (i < end1 && j < end2)
+        //    {
+        //        comparisons++;
+        //        if (source[i] <= source[j])
+        //        {
+        //            dest[destIndex++] = source[i++];
+        //        }
+        //        else
+        //        {
+        //            dest[destIndex++] = source[j++];
+        //        }
+        //        permutations++;
+        //    }
+
+        //    // Дописываем остатки
+        //    while (i < end1)
+        //    {
+        //        dest[destIndex++] = source[i++];
+        //        permutations++;
+        //    }
+        //    while (j < end2)
+        //    {
+        //        dest[destIndex++] = source[j++];
+        //        permutations++;
+        //    }
+        //}
+
+        //// Копирует серию без изменений
+        //private static void CopyRun(
+        //    int[] source, int[] dest,
+        //    int start, int end,
+        //    ref int destIndex, ref int permutations)
+        //{
+        //    for (int i = start; i < end; i++)
+        //    {
+        //        dest[destIndex++] = source[i];
+        //        permutations++;
+        //    }
+        //}
         public bool IsArraySorted(int[] arr)
         {
             for (int i = 0; i < arr.Length - 1; i++)
