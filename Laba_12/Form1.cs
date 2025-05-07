@@ -78,6 +78,14 @@ namespace Laba_12
                 dataGridView1.Rows[1].Cells[comparisonsCell].Value = sortOnePhaseMerge.Comparisons;
                 dataGridView1.Rows[1].Cells[sortedCell].Value = sortOnePhaseMerge.Sorted;
             }
+            if (arraySortChecked[2])
+            {
+                InfoSort sortOnePhaseNaturalMerge = TwoPhaseNaturalMergeSort(array);
+                dataGridView1.Rows[2].Cells[timeCell].Value = sortOnePhaseNaturalMerge.Time;
+                dataGridView1.Rows[2].Cells[assigmentCell].Value = sortOnePhaseNaturalMerge.Assigments;
+                dataGridView1.Rows[2].Cells[comparisonsCell].Value = sortOnePhaseNaturalMerge.Comparisons;
+                dataGridView1.Rows[2].Cells[sortedCell].Value = sortOnePhaseNaturalMerge.Sorted;
+            }
         }
         #region 
         //public InfoSort BubbleSort(int[] array)
@@ -784,8 +792,6 @@ namespace Laba_12
 
         }
 
-
-
         private (int, int) TransferItems(int sequenceLength,
             ref int[] source1, ref int source1Pointer,
             ref int[] source2, ref int source2Pointer,
@@ -863,31 +869,35 @@ namespace Laba_12
         /// permutations - количество перестановок элементов
         /// time - время выполнения в миллисекундах
         /// </returns>
-        public static (int comparisons, int permutations, long time) TwoPhaseNaturalMergeSort(ref int[] array)
+        public static InfoSort TwoPhaseNaturalMergeSort(int[] arr)
         {
-            // Инициализация счетчиков операций
             int comparisons = 0, permutations = 0;
-            // Засекаем время начала выполнения сортировки
+            int[] array = new int[arr.Length];
+            Array.Copy(arr, array, arr.Length);
+
             int start = Environment.TickCount;
 
-            // Создаем два вспомогательных массива для разделения исходного массива
             int[] bArray = new int[array.Length];
             int[] cArray = new int[array.Length];
 
-            bool needToContinue;
+            bool flag;
             do
             {
-                // Фаза разделения: разбиваем массив на подмассивы по сериям
                 (int bSize, int cSize) = NaturalSplit(array, bArray, cArray, ref comparisons, ref permutations);
 
-                // Фаза слияния: объединяем подмассивы обратно в исходный массив
-                needToContinue = NaturalMerge(ref array, bArray, bSize, cArray, cSize, ref comparisons, ref permutations);
+                flag = NaturalMerge(ref array, bArray, bSize, cArray, cSize, ref comparisons, ref permutations);
 
-            } while (needToContinue); // Повторяем, пока в массиве больше одной серии
+            } while (flag); 
 
-            // Вычисляем общее время выполнения
-            int end = Environment.TickCount - start;
-            return (comparisons, permutations, end);
+            int resultTime = Environment.TickCount - start;
+
+            return new InfoSort
+            {
+                Comparisons = comparisons,
+                Assigments = permutations,
+                Time = resultTime,
+                Sorted = flag ? "Нет" : "Да"
+            };
         }
 
         /// <summary>
@@ -904,9 +914,7 @@ namespace Laba_12
         {
             // Индексы для записи в подмассивы
             int bIndex = 0, cIndex = 0;
-            // Флаг для переключения между подмассивами (true - пишем в bArray, false - в cArray)
             bool writeToB = true;
-            // Хранит предыдущее значение для определения конца серии
             int lastValue = int.MinValue;
 
             // Проходим по всем элементам исходного массива
