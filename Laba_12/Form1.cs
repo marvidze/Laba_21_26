@@ -1117,7 +1117,7 @@ namespace Laba_12
             int cPointer = 0;
             int dPointer = 0;
             int ePointer = 0;
-
+            
             bool isFirst = true;
             bool sorted = false;
 
