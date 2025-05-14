@@ -1263,6 +1263,101 @@ namespace Laba_12
             return (count1, count2, sorted);
         }
 
+        private (int, int, int) doPogSort(int[] aFile, int opPercent)
+        {
+            int comparsions = 0, permutations = 0;
+            int n = aFile.Count();
+            int OP = Math.Max(1, (int)(n * opPercent / 100.0));
+            int[] memory = new int[OP];
+
+            int start = Environment.TickCount;
+
+            int lastBlockStart = Math.Max(0, n - OP); //начало предыдущего блока
+
+            ReadBlock(aFile, lastBlockStart, memory, OP, ref comparsions, ref permutations);
+            SortBlock(memory);
+            WriteBlock(aFile, lastBlockStart, memory, OP, ref comparsions, ref permutations);
+
+            while (lastBlockStart > 0)
+            {
+                int currentBlockStart = Math.Max(0, lastBlockStart - OP); //начало текущего обрабатываемого блока
+                int mergeStart = currentBlockStart; //Левая граница сливаемой последовательности
+
+                //Индекс границы между уже отсортированной последовательностью справа и сливаемой последовательностью слева
+                int mergeMid = lastBlockStart;
+
+                //Правая граница отсортированной последовательности
+                int mergeEnd = n;
+
+                ReadBlock(aFile, currentBlockStart, memory, mergeMid - currentBlockStart, ref comparsions, ref permutations);
+                SortBlock(memory);
+
+                MergeInPlace(aFile, mergeStart, mergeMid, mergeEnd, memory, ref comparsions, ref permutations);
+
+                lastBlockStart = currentBlockStart;
+            }
+
+            int elapsed = Environment.TickCount - start;
+
+            return (comparsions, permutations, elapsed);
+        }
+
+        static void ReadBlock(int[] source, int offset, int[] dest, int OP,
+            ref int comparsions, ref int permutations)
+        {
+            int count = Math.Min(OP, source.Count() - offset);
+            for (int i = 0; i < count; i++)
+            {
+                permutations++;
+                dest[i] = source[offset + i];
+            }
+        }
+
+        static void SortBlock(int[] memory)
+        {
+            Array.Sort(memory);
+        }
+
+        static void WriteBlock(int[] dest, int offset, int[] source, int OP,
+            ref int comparsions, ref int permutations)
+        {
+            int count = Math.Min(OP, source.Count());
+            for (int i = 0; i < count; i++)
+            {
+                permutations++;
+                dest[offset + i] = source[i];
+            }
+        }
+
+        static void MergeInPlace(int[] aFile, int leftStart, int mid, int rightEnd, int[] memory,
+            ref int comparsions, ref int permutations)
+        {
+            int left = leftStart;
+            int right = mid;
+            int memIndex = 0;
+
+            int k = leftStart;
+
+            while (memIndex < mid - leftStart && right < rightEnd)
+            {
+                comparsions++;
+                permutations++;
+                if (memory[memIndex] <= aFile[right])
+                {
+                    aFile[k++] = memory[memIndex++];
+                }
+                else
+                {
+                    aFile[k++] = aFile[right++];
+                }
+            }
+
+            while (memIndex < mid - leftStart)
+            {
+                permutations++;
+                aFile[k++] = memory[memIndex++];
+            }
+        }
         //public static InfoSort OnePhaseNaturalMergeSort(int[] arr)
         //{
         //    int comparisons = 0, permutations = 0;
